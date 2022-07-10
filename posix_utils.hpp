@@ -123,65 +123,19 @@ public:
 	static std::string Format(const std::string& content, Args... args)
 	{
 		std::string ret = content;
-		std::vector<std::string> args_;
-		SaveArgs(args_, typename MakeSeqs<sizeof... (Args)>::type(), std::make_tuple(args...));
-		std::vector<std::string> sources_;
-		Regex(R"([{]\d+[}])", ret, sources_);
-		if (sources_.size() != args_.size())
+		std::vector<std::string> args_vec;
+		std::initializer_list<int>{([&] {args_vec.push_back(std::to_string(args)); }(), 0)...};
+		std::vector<std::string> sources;
+		Regex(R"([{]\d+[}])", ret, sources);
+		if (sources.size() != args_vec.size())
 		{
 			return std::string();
 		}
-		for (int i = 0; i < sources_.size(); i++)
+		for (int i = 0; i < sources.size(); i++)
 		{
-			Replace(ret, sources_[i], args_[i]);
+			Replace(ret, sources[i], args_vec[i]);
 		}
 		return ret;
-	}
-
-private:
-	template<int...>
-	struct Seqs {};
-
-	template<int n, int... seqs>
-	struct MakeSeqs
-	{
-		using type = typename MakeSeqs<n - 1, n - 1, seqs...>::type;
-	};
-
-	template<int... seqs>
-	struct MakeSeqs<0, seqs...> {
-		typedef Seqs<seqs...> type;
-	};
-private:
-	template<typename T>
-	static void SaveArg(std::vector<std::string>& args, T t)
-	{
-		args.push_back(std::to_string(t));
-	}
-
-	template<>
-	static void SaveArg(std::vector<std::string>& args, std::string t)
-	{
-		args.push_back(t);
-	}
-
-	template<>
-	static void SaveArg(std::vector<std::string>& args, const char* t)
-	{
-		args.push_back(t);
-	}
-
-	template<typename T, typename... Args>
-	static void SaveArg(std::vector<std::string>& args_, T t, Args... args)
-	{
-		SaveArg(args_, t);
-		SaveArg(args_, args...);
-	}
-
-	template<int... seqs, typename... Args>
-	static void SaveArgs(std::vector<std::string>& args, Seqs<seqs...>, std::tuple<Args...>&& tup)
-	{
-		SaveArg(args, std::get<seqs>(tup)...);
 	}
 };
 }
